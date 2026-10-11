@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="Fotografe uma cena e ouca uma descricao curta dela. Feito para quem nao ve a tela." />
+    <title>Olhos Falantes</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#actions">Pular para o conte&uacute;do</a>
+
+    <main id="app">
+      <header class="head">
+        <div class="brand">
+          <img class="avatar" src="/img/olho.webp" alt="" width="120" height="120" />
+          <h1>Olhos Falantes</h1>
+        </div>
+        <p class="tagline">
+          <b>Fotografe e ou&ccedil;a.</b> A cena descrita em voz alta.
+        </p>
+      </header>
+
+      <section id="consent" class="card">
+        <h2>Antes de come&ccedil;ar</h2>
+        <ul class="consent-list">
+          <li>
+            O aplicativo usa a c&acirc;mera para tirar uma foto e envia essa imagem para um
+            servi&ccedil;o de descri&ccedil;&atilde;o na internet.
+          </li>
+          <li>N&atilde;o guardamos a sua foto.</li>
+          <li>N&atilde;o identificamos pessoas, rostos, idade, g&ecirc;nero ou emo&ccedil;&atilde;o.</li>
+          <li>N&atilde;o use para ler documentos confidenciais ou dados banc&aacute;rios.</li>
+          <li>O texto da descri&ccedil;&atilde;o fica sempre na tela, al&eacute;m do &aacute;udio.</li>
+        </ul>
+        <label class="check">
+          <input type="checkbox" id="consent-check" />
+          <span>Entendi e autorizo o uso da c&acirc;mera e o envio da foto para descri&ccedil;&atilde;o.</span>
+        </label>
+        <button id="consent-accept" class="primary" type="button" disabled>Come&ccedil;ar</button>
+      </section>
+
+      <section id="app-content" hidden>
+        <div id="camera-panel" class="stage" hidden>
+          <video id="camera" playsinline muted autoplay aria-label="C&acirc;mera"></video>
+        </div>
+
+        <div id="actions" class="controls">
+          <button id="btn-describe" class="primary" type="button">Tirar foto</button>
+          <button id="btn-choose" class="secondary" type="button">Escolher foto</button>
+          <button id="btn-capture" class="primary" type="button" hidden>Capturar</button>
+          <button id="btn-cancel" class="secondary" type="button" hidden>Cancelar</button>
+        </div>
+
+        <input
+          id="file-input"
+          class="visually-hidden"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          tabindex="-1"
+          aria-hidden="true"
+        />
+
+        <section class="card result" aria-labelledby="result-heading">
+          <h2 id="result-heading">Descri&ccedil;&atilde;o</h2>
+          <img id="photo-preview" class="photo-preview" alt="Foto enviada" hidden />
+          <p id="result" class="result-text" role="region" aria-live="polite" aria-atomic="true"></p>
+          <div class="result-actions">
+            <button id="btn-listen" class="primary" type="button" disabled>Ouvir</button>
+            <button id="btn-redescribe" class="secondary" type="button" disabled>
+              Descrever de novo esta foto
+            </button>
+          </div>
+        </section>
+
+        <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true">
+          Pronto para come&ccedil;ar
+        </p>
+        <div id="progress" class="progress" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="elapsed" class="elapsed" role="timer" aria-live="off">0 s</span>
+        </div>
+
+        <details class="card settings">
+          <summary>Configura&ccedil;&otilde;es</summary>
+          <p class="settings-note">
+            Os valores padr&atilde;o v&ecirc;m do arquivo <code>.env</code>. O que voc&ecirc; mudar aqui fica salvo
+            neste navegador e vale na hora.
+          </p>
+          <form id="settings-form" class="settings-form"></form>
+          <div class="settings-actions">
+            <button type="button" id="btn-reset-settings" class="secondary">
+              Restaurar padr&otilde;es do .env
+            </button>
+          </div>
+        </details>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
