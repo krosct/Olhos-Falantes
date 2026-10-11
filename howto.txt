@@ -1,0 +1,105 @@
+OLHOS FALANTES - HOW TO RUN
+===========================
+
+Photo in, short spoken scene description out. Built for people who cannot see the screen.
+
+Requirements
+------------
+- Node.js 18+ and npm
+- A Python virtualenv at ~/.venv with: fastapi, uvicorn[standard], python-multipart, httpx
+- A cloud vision API key (any OpenAI-compatible endpoint)
+
+First-time setup
+----------------
+    npm install
+    ~/.venv/bin/pip install fastapi "uvicorn[standard]" python-multipart httpx
+    npm run get:voices   # Piper pt-BR voices into models/piper (npm start also does it)
+
+Configure (optional file)
+-------------------------
+    cp env.example .env
+Then fill VISION_API_KEY in .env. Only the backend reads .env, and .env is git-ignored.
+
+Run with a single command
+-------------------------
+    npm start
+
+Starts the backend (FastAPI, port 8000) and the frontend (Vite, port 5173) in one
+terminal, then open:
+
+    http://localhost:5173
+
+Ctrl+C stops both. Any option passed after "--" overrides .env, for example:
+
+    npm start -- --vision-api-key=SUA_CHAVE --vision-model=gpt-4o-mini
+
+To use the camera on a phone on the same network (camera needs HTTPS):
+
+    npm start -- --host --https
+
+Then open https://<IP-DA-MAQUINA>:5173 on the phone, accept the self-signed
+certificate warning, and turn on TalkBack.
+
+Environment variables
+---------------------
+REQUIRED for real descriptions
+    VISION_API_KEY         Cloud API key. Without it the app still starts, but the
+                           backend answers "service unavailable". Never put it in src/.
+
+OPTIONAL (default in parentheses)
+    VISION_API_BASE        OpenAI-compatible base URL (https://api.openai.com/v1)
+    VISION_MODEL           Vision model name (gpt-4o-mini)
+    CONFIDENCE_THRESHOLD   Below this, answer "Nao sei" instead of guessing (0.35)
+    VISION_TIMEOUT_CONNECTION  Seconds to connect and upload, per attempt (10)
+    VISION_TIMEOUT_REQUEST     Seconds waiting for the model answer, per attempt (60)
+    VISION_ATTEMPTS            Attempts when the model is busy or down, 1-30 (3)
+    RATE_LIMIT_PER_MINUTE  Requests allowed per client per window (10)
+    RATE_WINDOW_S          Rate-limit window in seconds (60)
+    MAX_IMAGE_BYTES        Max uploaded image size in bytes (1500000)
+    API_HOST               Backend bind host (0.0.0.0)
+    API_PORT               Backend starting port; steps forward if busy (8000)
+    WEB_PORT               Frontend starting port; steps forward if busy (5173)
+    DEV_HTTPS              1 to serve the frontend over HTTPS (0)
+
+Precedence: defaults < .env < shell environment < command-line arguments.
+
+Command-line arguments (override .env)
+--------------------------------------
+    --vision-api-key=...         -> VISION_API_KEY
+    --vision-api-base=...        -> VISION_API_BASE
+    --vision-model=...           -> VISION_MODEL
+    --confidence-threshold=...   -> CONFIDENCE_THRESHOLD
+    --vision-timeout-connection=...  -> VISION_TIMEOUT_CONNECTION
+    --vision-timeout-request=...     -> VISION_TIMEOUT_REQUEST
+    --rate-limit-per-minute=...  -> RATE_LIMIT_PER_MINUTE
+    --rate-window-s=...          -> RATE_WINDOW_S
+    --max-image-bytes=...        -> MAX_IMAGE_BYTES
+    --api-host=...               -> API_HOST
+    --api-port=...               -> API_PORT
+    --web-port=...               -> WEB_PORT
+    --host                       listen on the local network (needed for the phone)
+    --https / --no-https         serve the frontend over HTTPS (camera on a phone)
+
+Other commands
+--------------
+    npm run typecheck    TypeScript type check
+    npm run lint         ESLint
+    npm run test         Frontend tests (vitest)
+    npm run test:api     Backend tests (pytest)
+    npm run build        Production build into dist/
+    npm run preview      Serve the production build (also proxies /api)
+
+Backend without the frontend
+----------------------------
+    ~/.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+    ~/.venv/bin/python -m server --vision-model=gpt-4o-mini
+
+Notes
+-----
+- Ports are resilient: if API_PORT or WEB_PORT is busy, the next free port is used
+  and printed on startup (e.g. "porta 8000 ocupada; usando 8001"). Stopping with
+  Ctrl+C kills both servers and releases the ports they opened.
+- HTTPS is required for the camera and the TWA. localhost counts as secure.
+- The API key never reaches the browser; only the backend holds it.
+- No image is stored: the proxy strips EXIF and never logs image content.
+- The description text is always shown on screen, never audio only.

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dev-dist/
+.env
+.env.*
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+.DS_Store
+models/
+audios/
+AGENTS.md
+img/originais/

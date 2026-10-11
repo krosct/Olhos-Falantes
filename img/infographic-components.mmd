@@ -1,0 +1,69 @@
+%% Components map for "Olhos Falantes" (photo in, short spoken description out)
+%% Rendered offline with mermaid-cli (mmdc)
+flowchart TB
+    classDef hw fill:#e2e8f0,stroke:#0f172a,color:#0f172a,stroke-width:2px;
+    classDef client fill:#dbeafe,stroke:#1d4ed8,color:#0f172a,stroke-width:2px;
+    classDef contract fill:#f1f5f9,stroke:#475569,color:#0f172a,stroke-width:2px,stroke-dasharray:5 3;
+    classDef back fill:#ede9fe,stroke:#6d28d9,color:#0f172a,stroke-width:2px;
+    classDef cloud fill:#ffedd5,stroke:#c2410c,color:#0f172a,stroke-width:2px;
+    classDef note fill:#fefce8,stroke:#ca8a04,color:#1c1917,stroke-width:1px;
+
+    TITLE["OLHOS FALANTES - MAPA DE COMPONENTES\nUsuario fotografa uma cena e ouve uma descricao curta em pt-BR"]
+
+    subgraph HW["DISPOSITIVO ANDROID (hardware)"]
+        direction LR
+        CAM["Camera traseira\nfacingMode: environment"]
+        SPEAKER["Alto-falante\nsaida de voz (TTS)"]
+        TALKBACK["TalkBack\nleitor de tela"]
+    end
+
+    subgraph CLIENTE["CLIENTE  -  PWA / TWA   (Vite + TypeScript)"]
+        direction TB
+        subgraph CAPTURA["Captura de imagem"]
+            CAMERA["camera.ts\ngetUserMedia + fallback: escolher foto"]
+            IMAGE["image.ts\nEXIF rotate, redimensiona,\nJPEG q0.8, remove metadados"]
+        end
+        subgraph REDE["Rede e contrato (sem chave de API aqui)"]
+            API["api.ts\nPOST /api/describe"]
+            TYPES["types.ts\nDescribeResponse - contrato fixo"]
+        end
+        subgraph UX["Interface e acessibilidade"]
+            UI["ui.ts\nbotoes enormes, alto contraste,\ntexto do resultado (sempre na tela)"]
+            A11Y["a11y.ts\nregioes aria-live\n(progresso e resultado)"]
+            SPEECH["speech.ts\nspeechSynthesis pt-BR\n(so no gesto Ouvir)"]
+        end
+        SW["service worker\ncache somente do app shell"]
+    end
+
+    subgraph BACKEND["BACKEND / PROXY   (Python + FastAPI)  -  guarda a chave"]
+        direction TB
+        MAIN["main.py\nrota /api/describe\nprompt fixo, rate limit,\nvalida imagem, remove EXIF,\nnunca persiste nem registra"]
+        VENDOR["vendor.py\nadaptador do vendor de visao"]
+    end
+
+    CLOUD["API DE VISAO-LINGUAGEM (nuvem)\nprompt fixo - nao identifica pessoas"]
+
+    TITLE --> CAM
+
+    CAM -->|frame| CAMERA
+    CAMERA --> IMAGE
+    IMAGE --> API
+    API <-->|"HTTPS multipart / JSON fixo"| MAIN
+    MAIN <-->|"pedido / resposta tipada"| VENDOR
+    VENDOR <-->|"imagem + prompt fixo / descricao pt-BR"| CLOUD
+    API --> TYPES
+    API --> UI
+    UI --> A11Y
+    UI --> SPEECH
+    A11Y -.aria-live.-> TALKBACK
+    SPEECH --> SPEAKER
+    TALKBACK -.le os rotulos.-> UI
+
+    NOTE["LEGENDA\nAzul: modulo do cliente   -   Roxo: backend   -   Laranja: nuvem   -   Cinza: hardware\na chave da API vive so no backend; o cliente nunca a ve"]
+
+    class CAM,SPEAKER,TALKBACK hw;
+    class CAMERA,IMAGE,API,UI,A11Y,SPEECH client;
+    class TYPES,SW contract;
+    class MAIN,VENDOR back;
+    class CLOUD cloud;
+    class TITLE,NOTE note;

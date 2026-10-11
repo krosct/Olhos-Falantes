@@ -1,0 +1,77 @@
+%% Data flow for "Olhos Falantes": user input (photo) -> feedback (spoken/text description)
+%% Shows which module acts at each stage, in timeline order
+%% Rendered offline with mermaid-cli (mmdc)
+flowchart TD
+    classDef user fill:#fef9c3,stroke:#a16207,color:#1c1917,stroke-width:2px;
+    classDef client fill:#dbeafe,stroke:#1d4ed8,color:#0f172a,stroke-width:2px;
+    classDef back fill:#ede9fe,stroke:#6d28d9,color:#0f172a,stroke-width:2px;
+    classDef cloud fill:#ffedd5,stroke:#c2410c,color:#0f172a,stroke-width:2px;
+    classDef fail fill:#fee2e2,stroke:#b91c1c,color:#1c1917,stroke-width:2px;
+
+    TITLE["OLHOS FALANTES - FLUXO DE DADOS (linha do tempo)\nda foto do item ate o feedback falado e escrito ao usuario"]
+
+    START(["Usuario (dona Lucia)\nTalkBack ativo, segura o celular\ne aponta a camera para o item"])
+
+    subgraph F1["ETAPA 1 - Gesto e consentimento"]
+        T1["1 . ui.ts\nToque no botao grande\n'Tirar foto e descrever'"]
+        T2["2 . a11y.ts + speech.ts\nAviso: 'Vou abrir a camera'\n(aria-live + voz)"]
+    end
+
+    subgraph F2["ETAPA 2 - Captura"]
+        T3["3 . camera.ts\nPede permissao, abre a camera traseira\ne mostra o preview"]
+        T4["4 . ui.ts\nToque em 'Capturar' - 1 snapshot\n(sem video)"]
+    end
+
+    subgraph F3["ETAPA 3 - Preparo local da imagem"]
+        T5["5 . image.ts\nEXIF rotate, redimensiona,\nJPEG q0.8, remove metadados\n(rejeita acima de ~1.5 MB)"]
+    end
+
+    subgraph F4["ETAPA 4 - Envio"]
+        T6["6 . a11y.ts + speech.ts\nProgresso falado e visivel:\n'Analisando...'"]
+        T7["7 . api.ts\nPOST /api/describe (multipart)\ntimeout de 20 s"]
+    end
+
+    subgraph F5["ETAPA 5 - Proxy (backend)"]
+        T8["8 . main.py\nrate limit, valida a imagem,\nremove EXIF, injeta o prompt fixo\nnao persiste nada"]
+    end
+
+    subgraph F6["ETAPA 6 - Vendor (nuvem)"]
+        T9["9 . vendor.py\nChama a API de visao-linguagem\ncom o prompt fixo"]
+        T10["10 . Cloud API\nGera a descricao curta em pt-BR:\nobjetos, layout, texto visivel"]
+    end
+
+    subgraph F7["ETAPA 7 - Resposta"]
+        T11["11 . main.py\nMonta o JSON fixo:\nok, confidence, description,\nuser_message, retry"]
+        T12["12 . api.ts + types.ts\nValida e tipa (DescribeResponse)"]
+    end
+
+    subgraph F8["ETAPA 8 - Feedback ao usuario"]
+        T13["13 . ui.ts\nMostra o texto grande e de alto\ncontraste (fica sempre na tela)"]
+        T14["14 . a11y.ts\nAnuncia 'Descricao pronta'"]
+        T15["15 . speech.ts\nSo no gesto 'Ouvir':\nspeechSynthesis le em pt-BR"]
+    end
+
+    END(["Usuario ouve e/ou le a descricao\npode tocar 'Ouvir' de novo\n(descricao nunca fica so no audio)"])
+
+    subgraph FAIL["DESVIOS - sempre com aviso falado e texto na tela"]
+        D1["Permissao negada (etapa 2)\ncamera.ts cai no fallback:\n'escolher foto'"]
+        D2["Imagem ruim ou escura (etapa 3)\nnao envia; pede outra foto"]
+        D3["Sem rede ou timeout 20 s (etapa 4)\napi.ts avisa e deixa tentar de novo"]
+        D4["Vendor fora do ar (etapa 6)\nJSON ok:false + mensagem amigavel"]
+        D5["Confianca baixa (etapa 7)\nmostra 'Nao sei' em vez de inventar"]
+    end
+
+    TITLE --> START
+    START --> T1 --> T2 --> T3 --> T4 --> T5 --> T6 --> T7 --> T8 --> T9 --> T10 --> T11 --> T12 --> T13 --> T14 --> T15 --> END
+
+    T3 -.-> D1
+    T5 -.-> D2
+    T7 -.-> D3
+    T10 -.-> D4
+    T11 -.-> D5
+
+    class TITLE,START,END user;
+    class T1,T2,T3,T4,T5,T6,T7,T12,T13,T14,T15 client;
+    class T8,T11 back;
+    class T9,T10 cloud;
+    class D1,D2,D3,D4,D5 fail;
