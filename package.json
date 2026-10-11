@@ -1,0 +1,32 @@
+{
+  "name": "olhos-falantes",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Fotografe uma cena e ouca uma descricao curta. Feito para quem nao ve a tela.",
+  "scripts": {
+    "start": "node scripts/dev.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "dev:api": "\"$HOME/.venv/bin/uvicorn\" server.main:app --host 0.0.0.0 --port 8000 --reload",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:api": "\"$HOME/.venv/bin/pytest\" -q",
+    "get:voices": "\"$HOME/.venv/bin/python\" scripts/get_voices.py",
+    "gen:icons": "\"$HOME/.venv/bin/python\" scripts/gen_icons.py"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.4",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^3.2.7"
+  }
+}
