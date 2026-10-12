@@ -17,7 +17,16 @@ import {
   speakTimeoutMs
 } from "./settings";
 import { mountSettingsPanel } from "./settingsPanel";
-import { setServerSpeechOptions, setVoiceChoice, setVoiceErrorHandler, speak } from "./speech";
+import {
+  pauseSpeech,
+  type PlaybackState,
+  resumeSpeech,
+  setPlaybackHandler,
+  setServerSpeechOptions,
+  setVoiceChoice,
+  setVoiceErrorHandler,
+  speak
+} from "./speech";
 import {
   getUi,
   setActionButtonsDisabled,
@@ -32,11 +41,14 @@ import type { DescribeResponse, VoiceChoice } from "./types";
 const ui = getUi();
 let busy = false;
 let lastPhoto: Blob | null = null;
+let describedWith: string | null = null;
 const reportedVoiceErrors = new Set<string>();
 let consented = false;
 let config = FALLBACK_CONFIG;
 let fields: Field[] = buildFields([], config.limits);
 let settings: Settings = { ...config.defaults };
+
+const READY_MESSAGE = "Tudo pronto. Clique no bot\u00e3o Ouvir para escutar a descri\u00e7\u00e3o da imagem.";
 
 function speakStatus(message: string): void {
   setStatus(message);
@@ -66,7 +78,7 @@ async function requestDescription(image: Blob): Promise<void> {
       attempts: settings.visionAttempts,
       timeoutMs: describeTimeoutMs(settings, config.visionRetryDelay)
     });
-    renderResponse(response);
+    describedWith = renderResponse(response) ? JSON.stringify(settings) : null;
   } catch (error) {
     const message =
       error instanceof DescribeError ? error.message : "N\u00e3o consegui descrever agora. Tente de novo.";
@@ -78,22 +90,25 @@ async function requestDescription(image: Blob): Promise<void> {
   }
 }
 
-function renderResponse(response: DescribeResponse): void {
+function renderResponse(response: DescribeResponse): boolean {
   if (!response.ok || response.retry || !response.description.trim()) {
     setListenEnabled(ui, false);
     setDescription("");
     speakStatus(response.user_message || "A foto n\u00e3o ficou boa. Tente outra.");
-    return;
+    return false;
   }
   setDescription(response.description);
   setListenEnabled(ui, true);
-  speakStatus(response.user_message || "Descri\u00e7\u00e3o pronta. Toque em Ouvir para ouvir.");
+  speakStatus(READY_MESSAGE);
+  return true;
 }
 
 async function sendPhoto(raw: Blob): Promise<void> {
   try {
     const prepared = await prepareImage(raw);
     lastPhoto = prepared;
+    describedWith = null;
+    ui.btnRedescribe.hidden = false;
     showPhotoPreview(ui, prepared);
     await requestDescription(prepared);
   } catch (error) {
@@ -166,6 +181,10 @@ async function redescribe(): Promise<void> {
   if (busy || !lastPhoto) {
     return;
   }
+  if (describedWith === JSON.stringify(settings)) {
+    listen();
+    return;
+  }
   setBusy(true);
   try {
     await requestDescription(lastPhoto);
@@ -179,7 +198,30 @@ function listen(): void {
     return;
   }
   const text = document.getElementById("result")?.textContent ?? "";
-  speak(text);
+  const stopProgress = startProgress(ui);
+  if (!speak(text, { onReady: stopProgress, pausable: true })) {
+    stopProgress();
+  }
+}
+
+let playback: PlaybackState = "idle";
+
+function togglePause(): void {
+  if (playback === "paused") {
+    resumeSpeech();
+  } else {
+    pauseSpeech();
+  }
+}
+
+function renderPlayback(state: PlaybackState): void {
+  playback = state;
+  const visible = state === "playing" || state === "paused";
+  if (!visible && document.activeElement === ui.btnPause) {
+    ui.btnListen.focus();
+  }
+  ui.btnPause.hidden = !visible;
+  ui.btnPause.textContent = state === "paused" ? "Continuar" : "Pausar";
 }
 
 function acceptConsent(): void {
@@ -187,7 +229,7 @@ function acceptConsent(): void {
   setActionButtonsDisabled(ui, false);
   showConsent(ui, false);
   ui.btnDescribe.focus();
-  speakStatus("Pronto. Toque em Tirar foto.");
+  speakStatus("Pronto. Tire ou envie uma foto para ser descrita.");
 }
 
 function initConsent(): void {
@@ -273,11 +315,13 @@ ui.fileInput.addEventListener("change", () => {
   void handleFileChosen();
 });
 ui.btnListen.addEventListener("click", listen);
+ui.btnPause.addEventListener("click", togglePause);
 ui.btnRedescribe.addEventListener("click", () => {
   void redescribe();
 });
 
 setVoiceErrorHandler(reportVoiceError);
+setPlaybackHandler(renderPlayback);
 applySettings(settings);
 initConsent();
 void initSettings();

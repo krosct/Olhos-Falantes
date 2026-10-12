@@ -12,6 +12,7 @@ export interface Ui {
   btnCapture: HTMLButtonElement;
   btnCancel: HTMLButtonElement;
   btnListen: HTMLButtonElement;
+  btnPause: HTMLButtonElement;
   btnRedescribe: HTMLButtonElement;
   photoPreview: HTMLImageElement;
   progress: HTMLElement;
@@ -34,6 +35,7 @@ export function getUi(): Ui {
     btnCapture: required<HTMLButtonElement>("btn-capture"),
     btnCancel: required<HTMLButtonElement>("btn-cancel"),
     btnListen: required<HTMLButtonElement>("btn-listen"),
+    btnPause: required<HTMLButtonElement>("btn-pause"),
     btnRedescribe: required<HTMLButtonElement>("btn-redescribe"),
     photoPreview: required<HTMLImageElement>("photo-preview"),
     progress: required<HTMLElement>("progress"),
@@ -83,16 +85,27 @@ export function showConsent(ui: Ui, visible: boolean): void {
   ui.appContent.hidden = visible;
 }
 
+let activeProgress = 0;
+
 export function startProgress(ui: Ui): () => void {
   const startedAt = performance.now();
   const render = (): void => {
     ui.elapsed.textContent = `${Math.floor((performance.now() - startedAt) / 1000)} s`;
   };
   render();
+  activeProgress += 1;
   ui.progress.hidden = false;
   const timer = window.setInterval(render, 250);
+  let stopped = false;
   return () => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
     window.clearInterval(timer);
-    ui.progress.hidden = true;
+    activeProgress -= 1;
+    if (activeProgress === 0) {
+      ui.progress.hidden = true;
+    }
   };
 }

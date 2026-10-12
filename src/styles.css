@@ -1,12 +1,14 @@
 :root {
   color-scheme: dark;
-  --bg: #0b1220;
-  --panel: #131c2e;
-  --panel-2: #1b2740;
-  --text: #e6ecf5;
-  --muted: #93a3bd;
-  --accent: #14b8a6;
+  --bg: #000000;
+  --panel: #0b111d;
+  --panel-2: #16213a;
+  --text: #ffffff;
+  --muted: #e2e8f0;
+  --accent: #2dd4bf;
   --accent-strong: #0f766e;
+  --on-accent: #000000;
+  --border: #8394b5;
   --focus: #fde047;
   --radius: 16px;
 }
@@ -22,12 +24,12 @@ body {
 }
 
 html {
-  scrollbar-color: #2c3b5c var(--bg);
+  font-size: 125%;
+  scrollbar-color: var(--border) var(--bg);
 }
 
 body {
-  background: radial-gradient(1200px 600px at 50% -10%, #17233b 0%, var(--bg) 60%);
-  background-color: var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family:
     system-ui,
@@ -36,7 +38,8 @@ body {
     Roboto,
     Ubuntu,
     sans-serif;
-  line-height: 1.5;
+  font-size: 1.1rem;
+  line-height: 1.55;
 }
 
 [hidden],
@@ -55,8 +58,8 @@ body {
   left: -9999px;
   top: 0;
   background: var(--accent);
-  color: #04211d;
-  padding: 12px 20px;
+  color: var(--on-accent);
+  padding: 14px 22px;
   border-radius: 12px;
   font-weight: 700;
   z-index: 10;
@@ -87,25 +90,26 @@ body {
 
 .head h1 {
   margin: 0;
-  font-size: 1.9rem;
-  letter-spacing: -0.02em;
+  font-size: 2.4rem;
+  letter-spacing: -0.01em;
 }
 
 .tagline {
   margin: 6px 0 24px;
   color: var(--muted);
+  font-size: 1.2rem;
 }
 
 .card {
   background: var(--panel);
-  border: 1px solid #24314d;
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
 }
 
 .card h2 {
   margin-top: 0;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
 }
 
 .consent-list {
@@ -121,25 +125,30 @@ body {
 /* Invisible vertical padding keeps the tap target at 48px without changing the look. */
 .check {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   align-items: flex-start;
   margin: -12px 0 4px;
+  font-weight: 700;
   padding: 12px 0;
   cursor: pointer;
 }
 
 .check input {
-  margin-top: 3px;
-  width: 18px;
-  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 32px;
+  height: 32px;
   accent-color: var(--accent);
 }
 
 button {
   font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
   border-radius: 12px;
-  border: 1px solid transparent;
-  padding: 12px 20px;
+  border: 3px solid transparent;
+  min-height: 64px;
+  padding: 14px 24px;
   cursor: pointer;
   transition:
     transform 0.06s ease,
@@ -151,7 +160,8 @@ button:active {
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
+  border-style: dashed;
   cursor: not-allowed;
 }
 
@@ -160,21 +170,20 @@ select:focus-visible,
 input:focus-visible,
 summary:focus-visible,
 .skip-link:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: 4px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .primary {
   background: var(--accent);
-  color: #04211d;
-  font-weight: 700;
-  font-size: 1.05rem;
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 
 .secondary {
   background: var(--panel-2);
   color: var(--text);
-  border-color: #2c3b5c;
+  border-color: var(--text);
 }
 
 .stage {
@@ -183,7 +192,7 @@ summary:focus-visible,
   overflow: hidden;
   background: #05080f;
   aspect-ratio: 4 / 3;
-  border: 1px solid #24314d;
+  border: 2px solid var(--border);
 }
 
 .stage video {
@@ -195,8 +204,8 @@ summary:focus-visible,
 
 .status {
   margin: 20px 0 0;
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   text-align: center;
   color: var(--accent);
 }
@@ -205,30 +214,45 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin: 10px 0 0;
+  gap: 14px;
+  margin: 16px 0 0;
   color: var(--muted);
+  font-size: 1.3rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.spinner {
-  width: 22px;
-  height: 22px;
+.loader {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  border: 3px solid #2c3b5c;
-  border-top-color: var(--accent);
-  animation: spin 0.9s linear infinite;
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.5);
+  font-size: 36px;
+  line-height: 1;
 }
 
-@keyframes spin {
+/* The emoji glyph sits slightly low in its box; lift it and spin around its center. */
+.loader span {
+  display: block;
+  margin-top: -0.09em;
+  transform-origin: 50% calc(50% + 0.09em);
+  filter: drop-shadow(0 0 4px rgba(230, 236, 245, 0.8));
+  animation: loader-spin 3s linear infinite;
+}
+
+@keyframes loader-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 3s;
+  .loader span {
+    animation: none;
   }
 }
 
@@ -241,7 +265,7 @@ summary:focus-visible,
 }
 
 .controls .primary {
-  min-width: 180px;
+  min-width: 220px;
 }
 
 .photo-preview {
@@ -252,13 +276,14 @@ summary:focus-visible,
   margin-bottom: 16px;
   border-radius: 12px;
   background: #05080f;
-  border: 1px solid #24314d;
+  border: 2px solid var(--border);
 }
 
 .result-text {
   margin: 0 0 16px;
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.45;
   word-break: break-word;
 }
 
@@ -273,7 +298,7 @@ summary:focus-visible,
 }
 
 .result-actions .primary {
-  min-width: 180px;
+  min-width: 220px;
 }
 
 .settings {
@@ -282,19 +307,21 @@ summary:focus-visible,
 }
 
 .settings summary {
+  min-height: 64px;
   padding: 16px 20px;
-  font-weight: 700;
+  font-size: 1.3rem;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .settings[open] summary {
-  border-bottom: 1px solid #24314d;
+  border-bottom: 2px solid var(--border);
 }
 
 .settings-note {
   margin: 16px 20px 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1.1rem;
 }
 
 .settings-form {
@@ -318,32 +345,34 @@ summary:focus-visible,
   padding: 0;
   margin-bottom: 8px;
   color: var(--accent);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: 1.3rem;
 }
 
 .setting {
   display: grid;
-  grid-template-columns: 1fr 140px;
-  gap: 4px 12px;
+  grid-template-columns: 1fr 200px;
+  gap: 6px 12px;
   align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid #1f2a42;
+  padding: 12px 0;
+  border-top: 2px solid var(--panel-2);
 }
 
 .setting label {
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-weight: 700;
+  font-size: 1.15rem;
 }
 
 .setting input,
 .setting select {
   font: inherit;
   width: 100%;
-  min-height: 48px;
-  padding: 6px 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  min-height: 56px;
+  padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid #2c3b5c;
+  border: 2px solid var(--text);
   background: var(--panel-2);
   color: var(--text);
 }
@@ -354,8 +383,8 @@ summary:focus-visible,
 
 .setting-check input {
   order: -1;
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   min-height: 0;
   accent-color: var(--accent);
 }
@@ -370,10 +399,10 @@ summary:focus-visible,
   grid-column: 1 / -1;
   margin: 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 520px) {
   .setting:not(.setting-check) {
     grid-template-columns: 1fr;
   }

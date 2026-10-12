@@ -71,7 +71,8 @@
           <p id="result" class="result-text" role="region" aria-live="polite" aria-atomic="true"></p>
           <div class="result-actions">
             <button id="btn-listen" class="primary" type="button" disabled>Ouvir</button>
-            <button id="btn-redescribe" class="secondary" type="button" disabled>
+            <button id="btn-pause" class="secondary" type="button" hidden>Pausar</button>
+            <button id="btn-redescribe" class="secondary" type="button" disabled hidden>
               Descrever de novo esta foto
             </button>
           </div>
@@ -81,7 +82,7 @@
           Pronto para come&ccedil;ar
         </p>
         <div id="progress" class="progress" hidden>
-          <span class="spinner" aria-hidden="true"></span>
+          <span class="loader" aria-hidden="true"><span>👁️</span></span>
           <span id="elapsed" class="elapsed" role="timer" aria-live="off">0 s</span>
         </div>
 
