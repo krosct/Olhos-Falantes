@@ -72,14 +72,24 @@ if (isSpeechSupported()) {
   loadVoices();
   window.speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
 }
+export type PlaybackState = "idle" | "loading" | "playing" | "paused";
 
 let choice: VoiceChoice = { engine: "device" };
 let currentAudio: HTMLAudioElement | null = null;
 let currentRequest: AbortController | null = null;
+let currentUtterance: SpeechSynthesisUtterance | null = null;
 let onVoiceError: ((message: string) => void) | null = null;
+let onPlayback: ((state: PlaybackState) => void) | null = null;
+let lastClip: { key: string; blob: Blob } | null = null;
+let playback: PlaybackState = "idle";
+let tracked = false;
+let deviceText = "";
+let deviceOffset = 0;
 
 export interface SpeakOptions {
   cache?: boolean;
+  onReady?: () => void;
+  pausable?: boolean;
 }
 
 let serverOptions: { ttsTimeout?: number; timeoutMs?: number } = {};
@@ -92,12 +102,24 @@ export function setVoiceErrorHandler(handler: (message: string) => void): void {
   onVoiceError = handler;
 }
 
+export function setPlaybackHandler(handler: (state: PlaybackState) => void): void {
+  onPlayback = handler;
+}
+
 export function setVoiceChoice(next: VoiceChoice): void {
   choice = next;
 }
 
 export function getVoiceChoice(): VoiceChoice {
   return choice;
+}
+
+function setPlayback(state: PlaybackState): void {
+  const next = tracked ? state : "idle";
+  if (next !== playback) {
+    playback = next;
+    onPlayback?.(next);
+  }
 }
 
 function stopAudio(): void {
@@ -112,23 +134,44 @@ export function cancelSpeech(): void {
   currentRequest?.abort();
   currentRequest = null;
   stopAudio();
+  currentUtterance = null;
   if (isSpeechSupported()) {
     window.speechSynthesis.cancel();
   }
+  setPlayback("idle");
+  tracked = false;
 }
 
-function speakWithDevice(text: string): boolean {
+function speakWithDevice(text: string, offset = 0): boolean {
   if (!isSpeechSupported()) {
+    setPlayback("idle");
     return false;
   }
-  const utterance = new SpeechSynthesisUtterance(text);
+  deviceText = text;
+  deviceOffset = offset;
+  const utterance = new SpeechSynthesisUtterance(text.slice(offset));
   utterance.lang = SPEECH_LANG;
   utterance.rate = SPEECH_RATE;
   const voice = pickBestVoice(loadVoices());
   if (voice) {
     utterance.voice = voice;
   }
+  utterance.addEventListener("boundary", (event) => {
+    if (currentUtterance === utterance && event.name === "word") {
+      deviceOffset = offset + event.charIndex;
+    }
+  });
+  const finish = (): void => {
+    if (currentUtterance === utterance) {
+      currentUtterance = null;
+      setPlayback("idle");
+    }
+  };
+  utterance.addEventListener("end", finish);
+  utterance.addEventListener("error", finish);
+  currentUtterance = utterance;
   window.speechSynthesis.speak(utterance);
+  setPlayback("playing");
   return true;
 }
 
@@ -138,18 +181,49 @@ async function speakWithServer(
   controller: AbortController,
   cache: boolean
 ): Promise<void> {
-  const blob = await fetchSpeech(text, voice, controller.signal, { ...serverOptions, cache });
+  const key = `${voice}\n${text}`;
+  const blob =
+    lastClip?.key === key
+      ? lastClip.blob
+      : await fetchSpeech(text, voice, controller.signal, { ...serverOptions, cache });
   if (controller.signal.aborted) {
     return;
   }
+  lastClip = { key, blob };
   const audio = new Audio(URL.createObjectURL(blob));
   currentAudio = audio;
   audio.addEventListener("ended", () => {
     if (currentAudio === audio) {
       stopAudio();
+      setPlayback("idle");
     }
   });
   await audio.play();
+  setPlayback("playing");
+}
+
+export function pauseSpeech(): void {
+  if (playback !== "playing") {
+    return;
+  }
+  if (currentAudio) {
+    currentAudio.pause();
+  } else {
+    currentUtterance = null;
+    window.speechSynthesis.cancel();
+  }
+  setPlayback("paused");
+}
+
+export function resumeSpeech(): void {
+  if (playback !== "paused") {
+    return;
+  }
+  if (currentAudio) {
+    void currentAudio.play().then(() => setPlayback("playing"));
+  } else {
+    speakWithDevice(deviceText, deviceOffset);
+  }
 }
 
 export function speak(text: string, options: SpeakOptions = {}): boolean {
@@ -157,16 +231,21 @@ export function speak(text: string, options: SpeakOptions = {}): boolean {
     return false;
   }
   cancelSpeech();
+  tracked = options.pausable ?? false;
   if (choice.engine === "device") {
-    return speakWithDevice(text);
+    const spoken = speakWithDevice(text);
+    options.onReady?.();
+    return spoken;
   }
   const controller = new AbortController();
   currentRequest = controller;
+  setPlayback("loading");
   speakWithServer(text, choice.voice, controller, options.cache ?? false)
     .catch((error: unknown) => {
       if (controller.signal.aborted) {
         return;
       }
+      stopAudio();
       speakWithDevice(text);
       if (error instanceof SpeechError && error.userMessage) {
         onVoiceError?.(error.userMessage);
@@ -176,6 +255,7 @@ export function speak(text: string, options: SpeakOptions = {}): boolean {
       if (currentRequest === controller) {
         currentRequest = null;
       }
+      options.onReady?.();
     });
   return true;
 }
